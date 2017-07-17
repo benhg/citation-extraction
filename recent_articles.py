@@ -78,14 +78,15 @@ This just combines the two functions above.
 """
 def get_dictionaries(path):
     articles = parse_research_articles(get_recent_articles(path))
-    return articles 
+    return articles
+
 allDictionaries = get_dictionaries(path)
 """
 This function will create a list of dictionaries where each entry has the articles
-doi and the content. It will look like [{'doi': 4363653, }]
+doi and the content. It will look like [{'doi': 4363653, }].
+It will return 
 """
-def get_content(list_of_dict, number_of_articles=0):
- 
+def min_jsonDict(list_of_dict, number_of_articles=0):
     if number_of_articles == 0:
         number_of_articles = len(list_of_dict)
     else:
@@ -93,17 +94,37 @@ def get_content(list_of_dict, number_of_articles=0):
     articleList = []
     for x in range(number_of_articles):
         totalDict = {} # This will hold the doi and content. Then it will be added as an index to articleList
+        print(x)
         dataDict = list_of_dict[x]
+        print(dataDict)
         doi = dataDict['doi']
+        title = dataDict['title']
         content = dataDict['data'] # the content is in a nested dictionary... dumb I know
         contentList = content['ocr'] # and then this is a nested list... what the fuck
-        totalArticle = u''.join(contentList)
-        
-        totalDict['doi'] = doi
+        totalArticle = u''.join(contentList) # And then I need to join it to....
         totalDict['content'] = totalArticle
+        totalDict['title'] = title
+        totalDict['doi'] = doi
+
         articleList.append(totalDict)
-   
     print(len(articleList))
+    return articleList # It's a list of dictionaries that correlate to individual articles.
+
+"""
+This function splits the article into a content section and a references section. 
+When running this the input should call min_jsonDict so it should look like this,
+split_references(minJsonDict(path_to_jsonfile))
+"""
+def split_references(list_of_dict):
+    articleList = []
+    for x in range(len(list_of_dict)): # Iterates through each article's dictionary in the list.
+        articleDict = list_of_dict[x]
+        content = articleDict['content']
+        article = content.split('References')
+        if len(article) == 2:
+            articleDict['references'] = article[1]
+            articleDict['content'] = article[0]
+            articleList.append(articleDict)
     return articleList
 
 """
@@ -127,8 +148,8 @@ def get_intexts(articleStr):
     return matches
 
 def get_full_citations_regex(articleStr):
-    ex = re.compile(r"""(?<author>[A-Z](?:(?!$)[A-Za-z\s&.,'’])+)\((?<year>\d{4})\)\.?\s*(?<title>[^()]+?[?.!])\s*(?:(?:(?<jurnal>(?:(?!^[A-Z])[^.]+?)),\s*(?<issue>\d+)[^,.]*(?=,\s*\d+|.\s*Ret))|(?:In\s*(?<editors>[^()]+))\(Eds?\.\),\s*(?<book>[^().]+)|(?:[^():]+:[^().]+\.)|(?:Retrieved|Paper presented))""")
-    matches = re.findall(ex, articleStr)
+    ex = re.compile(r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]).)""")
+    matches = re.split(ex, articleStr)
     return matches
 
 
@@ -144,11 +165,16 @@ def extract_text_from_pdf(doi):
     return text
 
 def get_and_compare_citations(articles):
-    articles = get_content(allDictionaries,10)
+    articles = split_references(min_jsonDict((allDictionaries)))
     for article in articles:
+        print (article)
+        doi = article['doi']
         intexts = get_intexts(article['content'])
         fulls = get_full_citations_regex(article['references'])
+        print(len(fulls))
         print(fulls)
+        print('\n')
+        print(len(intexts))
         print(intexts)
 
 get_and_compare_citations(0)
