@@ -1,42 +1,7 @@
-"""
-So two ways I can go about getting recent articles...
-
-1. I use my previous code from csv_to_txt.py to just get the column from the csv files 
-and then only store the csv files that have a publication data of 2010 - present.
-
-2. I could write a new script that does the same thing but with json files. 
-
-Things to think about: 
-1. I already have all the csv files now. If I did (2) I would have to get yadu to send
-me all the other json files. 
-2. Apparently Json files are better to work with but I'm having a hard time getting the content from them. 
-"""
-
 import json
 import pprint 
 import regex as re
-import PyPDF2
-
 path = '/home/benglick/data-00020.json'
-
-"""
-This function will take get_articles as a parameter and then return a list of dictionaries
-for every research article. 
-"""
-def parse_research_articles(list_of_dict, addInfo = False):
-    data = list_of_dict
-    research_articles = []
-    for x in range(len(data)):
-        data = list_of_dict[x]
-        if 'type' in data.keys():
-            if 'research-article' in data['type']:
-                research_articles += [data]
-    if addInfo == True:
-        print('There are '+str(len(research_articles)))+' research articles.'
-        t = research_articles[0]
-        print(t['title'])
-    return research_articles
-
 """
 This function will read the json file which is the formatted as a dictionary of dictionaries. 
 Then it will check if the dictionaries for each article actual has a publication date. From that
@@ -72,7 +37,6 @@ def get_recent_articles(path,printInfo = False):
             else:
                 incomplete+=1 
         
-
         # This allows user to show info about json file if they want.
         if printInfo==True:
             research = recent[3]
@@ -89,37 +53,67 @@ def get_recent_articles(path,printInfo = False):
     else:
         print("Something is probably wrong with the json file.")
         print("There are "+str(rcount)+" articles from 2010-present but the list that stores these possible articles has a length different that the counter...")
-
+"""
+This function will take get_articles as a parameter and then return a list of dictionaries
+for every research article. It will also check that each dictionary actually has a doi.
+"""
+def parse_research_articles(list_of_dict, addInfo = False):
+    data = list_of_dict
+    research_articles = []
+    for x in range(len(data)):
+        articleDict = list_of_dict[x]
+        if 'doi' in articleDict.keys():
+            if 'type' in articleDict.keys():
+                if 'research-article' in articleDict['type']:
+                    research_articles += [articleDict]
+    
+    # This is just a conditional to give the user an option to display more info if needed.
+    if addInfo == True:
+        print('There are '+str(len(research_articles)))+' research articles.'
+        t = research_articles[0]
+        print(t['title'])
+    return research_articles
 """
 This just combines the two functions above. 
 """
 def get_dictionaries(path):
     articles = parse_research_articles(get_recent_articles(path))
     return articles 
-
-
-
 allDictionaries = get_dictionaries(path)
-
-def get_content(list_of_dict, number_of_articles = 1):
+"""
+This function will create a list of dictionaries where each entry has the articles
+doi and the content. It will look like [{'doi': 4363653, }]
+"""
+def get_content(list_of_dict, number_of_articles=0):
+ 
+    if number_of_articles == 0:
+        number_of_articles = len(list_of_dict)
+    else:
+        number_of_articles=number_of_articles
     articleList = []
-    for x in range(len(list_of_dict)):
+    for x in range(number_of_articles):
+        totalDict = {} # This will hold the doi and content. Then it will be added as an index to articleList
         dataDict = list_of_dict[x]
+        doi = dataDict['doi']
         content = dataDict['data'] # the content is in a nested dictionary... dumb I know
-        contentList = content['ocr'] # and then the this is a nested list... what the fuck
+        contentList = content['ocr'] # and then this is a nested list... what the fuck
         totalArticle = u''.join(contentList)
-        articleList.append(totalArticle)
+        
+        totalDict['doi'] = doi
+        totalDict['content'] = totalArticle
+        articleList.append(totalDict)
+   
     print(len(articleList))
-    return articleList
+    return articleList[0]
 
-
-# def get_full_citations(articleStr, flag):
-#     matches=[]
-#     refs = refextract.extract_references_from_string(articleStr, is_only_references=flag)
-#     for ref in refs:
-#         matches.append(ref["raw_ref"][0])
-#     return matches
-
+"""
+def get_full_citations(articleStr, flag):
+    matches=[]
+    refs = refextract.extract_references_from_string(articleStr, is_only_references=flag)
+    for ref in refs:
+        matches.append(ref["raw_ref"][0])
+    return matches
+"""
 
 def get_intexts(articleStr):
     author = "(?:[A-Z][A-Za-z'`-]+)"
@@ -133,7 +127,8 @@ def get_intexts(articleStr):
     return matches
 
 def get_full_citations_regex(articleStr):
-    ex = re.compile(r"""^(?<author>[A-Z](?:(?!$)[A-Za-z\s&.,‘’])+)\((?<year>\d{4})\)\.?\s*(?<title>[^()]+?[?.!])\s*(?:(?:(?<jurnal>(?:(?!^[A-Z])[^.]+?)),\s*(?<issue>\d+)[^,.]*(?=,\s*\d+|.\s*Ret))|(?:In\s*(?<editors>[^()]+))\(Eds?\.\),\s*(?<book>[^().]+)|(?:[^():]+:[^().]+\.)|(?:Retrieved|Paper presented))""")
+    ex = re.compile(r"""^(?<author>(?:(?!$)[A-Za-z\s&.,'’])+)\((?<year>\d{4})\)\.?\s*(?<title>[^?.!]+?[.?!])\s*(?!\s*Retrieved)(?:(?:(?<jurnal>(?:(?!^[A-Z])[^,])+?),\s*(?<issue>\d+)))
+""")
     matches = re.findall(ex, articleStr)
     return matches
 
@@ -156,3 +151,5 @@ def get_and_compare_citations(articles):
         fulls = get_full_citations_regex(article)
         print(fulls)
         print(intexts)
+
+get_and_compare_citations(0)
