@@ -15,6 +15,7 @@ me all the other json files.
 import json
 import pprint 
 import regex as re
+import PyPDF2
 
 path = '/home/benglick/data-00020.json'
 
@@ -133,10 +134,9 @@ def get_intexts(articleStr):
 
 def get_full_citations_regex(articleStr):
     ex = re.compile(r"""^(?<author>[A-Z](?:(?!$)[A-Za-z\s&.,‘’])+)\((?<year>\d{4})\)\.?\s*(?<title>[^()]+?[?.!])\s*(?:(?:(?<jurnal>(?:(?!^[A-Z])[^.]+?)),\s*(?<issue>\d+)[^,.]*(?=,\s*\d+|.\s*Ret))|(?:In\s*(?<editors>[^()]+))\(Eds?\.\),\s*(?<book>[^().]+)|(?:[^():]+:[^().]+\.)|(?:Retrieved|Paper presented))""")
-    matches = re.findall(ex,articleStr)
+    matches = re.findall(ex, articleStr)
     return matches
 
-import PyPDF2
 
 def extract_text_from_pdf(doi):
     text=""
@@ -149,4 +149,10 @@ def extract_text_from_pdf(doi):
         text += " "+page_content
     return text
 
-articles = get_dictionaries(path)
+def get_and_compare_citations(articles):
+    articles = get_content(allDictionaries)
+    for article in articles:
+        intexts = get_intexts(article)
+        fulls = get_full_citations_regex(article)
+        print(fulls)
+        print(intexts)
