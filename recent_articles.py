@@ -104,7 +104,7 @@ def get_content(list_of_dict, number_of_articles=0):
         articleList.append(totalDict)
    
     print(len(articleList))
-    return articleList[0]
+    return articleList
 
 """
 def get_full_citations(articleStr, flag):
@@ -127,8 +127,7 @@ def get_intexts(articleStr):
     return matches
 
 def get_full_citations_regex(articleStr):
-    ex = re.compile(r"""^(?<author>(?:(?!$)[A-Za-z\s&.,'’])+)\((?<year>\d{4})\)\.?\s*(?<title>[^?.!]+?[.?!])\s*(?!\s*Retrieved)(?:(?:(?<jurnal>(?:(?!^[A-Z])[^,])+?),\s*(?<issue>\d+)))
-""")
+    ex = re.compile(r"""(?<author>[A-Z](?:(?!$)[A-Za-z\s&.,'’])+)\((?<year>\d{4})\)\.?\s*(?<title>[^()]+?[?.!])\s*(?:(?:(?<jurnal>(?:(?!^[A-Z])[^.]+?)),\s*(?<issue>\d+)[^,.]*(?=,\s*\d+|.\s*Ret))|(?:In\s*(?<editors>[^()]+))\(Eds?\.\),\s*(?<book>[^().]+)|(?:[^():]+:[^().]+\.)|(?:Retrieved|Paper presented))""")
     matches = re.findall(ex, articleStr)
     return matches
 
@@ -145,10 +144,10 @@ def extract_text_from_pdf(doi):
     return text
 
 def get_and_compare_citations(articles):
-    articles = get_content(allDictionaries)
+    articles = get_content(allDictionaries,10)
     for article in articles:
-        intexts = get_intexts(article)
-        fulls = get_full_citations_regex(article)
+        intexts = get_intexts(article['content'])
+        fulls = get_full_citations_regex(article['references'])
         print(fulls)
         print(intexts)
 
