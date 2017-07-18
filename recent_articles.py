@@ -94,15 +94,15 @@ def min_jsonDict(list_of_dict, number_of_articles=0):
     articleList = []
     for x in range(number_of_articles):
         totalDict = {} # This will hold the doi and content. Then it will be added as an index to articleList
-        print(x)
+        #print(x)
         dataDict = list_of_dict[x]
-        print(dataDict)
+        #print(dataDict)
         doi = dataDict['doi']
         title = dataDict['title']
         content = dataDict['data'] # the content is in a nested dictionary... dumb I know
         contentList = content['ocr'] # and then this is a nested list... what the fuck
         totalArticle = u''.join(contentList) # And then I need to join it to....
-        totalDict['content'] = totalArticle
+        totalDict['content'] = totalArticle  
         totalDict['title'] = title
         totalDict['doi'] = doi
 
@@ -150,7 +150,11 @@ def get_intexts(articleStr):
 def get_full_citations_regex(articleStr):
     ex = re.compile(r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]).)""")
     matches = re.split(ex, articleStr)
-    return matches
+    tempMatches=[]
+    for i in range(0,len(matches)-1,2):
+        match=matches[i]+" "+matches[(i+1)]
+        tempMatches.append(match)
+    return tempMatches;
 
 
 def extract_text_from_pdf(doi):
@@ -165,16 +169,12 @@ def extract_text_from_pdf(doi):
     return text
 
 def get_and_compare_citations(articles):
-    articles = split_references(min_jsonDict((allDictionaries)))
+    articles = split_references(min_jsonDict(allDictionaries))
     for article in articles:
-        print (article)
+        #print (article)
         doi = article['doi']
         intexts = get_intexts(article['content'])
         fulls = get_full_citations_regex(article['references'])
-        print(len(fulls))
-        print(fulls)
-        print('\n')
-        print(len(intexts))
-        print(intexts)
+
 
 get_and_compare_citations(0)
