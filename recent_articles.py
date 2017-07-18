@@ -217,7 +217,7 @@ def get_intexts(articleStr):
 
 
 def get_full_citations_regex(articleStr):
-    ex = re.compile(r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]).)""")
+    ex = re.compile(r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]))|[19|20]{2}\d{2};\d{2}:.*\.""")
     matches = re.split(ex, articleStr)
     tempMatches=[]
     for i in range(0,len(matches)-1,2):
