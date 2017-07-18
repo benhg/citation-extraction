@@ -1,6 +1,7 @@
 import json
-import pprint 
 import regex as re
+import csv
+
 path = '/home/benglick/data-00020.json'
 """
 This function will read the json file which is the formatted as a dictionary of dictionaries. 
@@ -71,7 +72,7 @@ def parse_research_articles(list_of_dict, addInfo = False):
     if addInfo == True:
         print('There are '+str(len(research_articles)))+' research articles.'
         t = research_articles[0]
-        print(t['title'])
+        print(['title'])
     return research_articles
 """
 This just combines the two functions above. 
@@ -107,7 +108,7 @@ def min_jsonDict(list_of_dict, number_of_articles=0):
         totalDict['doi'] = doi
 
         articleList.append(totalDict)
-    print(len(articleList))
+    #print(len(articleList))
     return articleList # It's a list of dictionaries that correlate to individual articles.
 
 """
@@ -115,6 +116,7 @@ This function splits the article into a content section and a references section
 When running this the input should call min_jsonDict so it should look like this,
 split_references(minJsonDict(path_to_jsonfile))
 """
+
 def split_references(list_of_dict):
     articleList = []
     for x in range(len(list_of_dict)): # Iterates through each article's dictionary in the list.
@@ -125,6 +127,48 @@ def split_references(list_of_dict):
             articleDict['references'] = article[1]
             articleDict['content'] = article[0]
             articleList.append(articleDict)
+        else:
+            article = content.split('REFERENCES')
+            if len(article) == 2:
+                articleDict['references'] = article[1]
+                articleDict['content'] = article[0]
+                articleList.append(articleDict)
+            else:
+                article = content.split('Bibliography')
+                if len(article) == 2:
+                    articleDict['references'] = article[1]
+                    articleDict['content'] = article[0]
+                    articleList.append(articleDict)
+                else:
+                    article = content.split('BIBLIOGRAPHY')
+                    if len(article) == 2:
+                        articleDict['references'] = article[1]
+                        articleDict['content'] = article[0]
+                        articleList.append(articleDict)
+                    else:
+                        article = content.split('BIBLIOGRAPHY')
+                        if len(article) == 2:
+                            articleDict['references'] = article[1]
+                            articleDict['content'] = article[0]
+                            articleList.append(articleDict)
+                        else:
+                            article = content.split('Endnotes')
+                            if len(article) == 2:
+                                articleDict['references'] = article[1]
+                                articleDict['content'] = article[0]
+                                articleList.append(articleDict)
+                            else:
+                                article = content.split('ENDNOTES')
+                                if len(article) == 2:
+                                    articleDict['references'] = article[1]
+                                    articleDict['content'] = article[0]
+                                    articleList.append(articleDict)
+                                else:
+                                    article = content.split('work cited')
+                                    if len(article) == 2:
+                                        articleDict['references'] = article[1]
+                                        articleDict['content'] = article[0]
+                                        articleList.append(articleDict)
     return articleList
 
 """
@@ -146,6 +190,7 @@ def get_intexts(articleStr):
     regex = "(" + author + additional+"*" + year + ")"
     matches = re.findall(regex, articleStr)
     return matches
+
 
 def get_full_citations_regex(articleStr):
     ex = re.compile(r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]).)""")
@@ -175,6 +220,60 @@ def get_and_compare_citations(articles):
         doi = article['doi']
         intexts = get_intexts(article['content'])
         fulls = get_full_citations_regex(article['references'])
+        matches = map_citations(intexts, fulls)
+        write_to_csv(matches, doi.replace("/",":"))
+    return 0
 
+def map_citations(intexts, fulls):
+    mapping=[]
+    for intext in intexts:
+        citation = {"intext" : intext}
+        # ALEX: GET CONTEXT HERE
+        citation['context'] = ''
+        split_cite=re.split(r'(\s+)',intext)#Split year from name/institution
+        year = ''.join(filter(lambda x: x.isdigit(), split_cite[-1:][0]))
+        other_stuff=''.join(split_cite[:-1])
+        for full in fulls:
+            otherMatch = other_match(other_stuff, full) 
+            if year in full and otherMatch:
+                citation['full'] = full
+                break
+        mapping.append(citation)
+    return mapping
+
+def other_match(other_stuff, full):
+    if ',' in other_stuff:
+        if other_stuff.split(',')[0].strip() in full:
+            return True
+        elif 'and' in other_stuff:
+            if other_stuff.split('and')[0].strip() in full or other_stuff.split('and')[1].strip() in full:
+                return True
+        return False
+    elif 'and' in other_stuff:
+        if other_stuff.split('and')[0].strip() in full or other_stuff.split('and')[1].strip() in full:
+            return True
+        return False
+    elif '&' in other_stuff:
+        if other_stuff.split('&')[0].strip() in full or other_stuff.split('&')[1].strip() in full:
+            return True
+        return False
+    elif 'et al.' in other_stuff:
+        if other_stuff.split('et al.')[0].strip() in full:
+            return True
+        return False
+    elif other_stuff.strip() in full:
+        return True
+    elif other_stuff in full:
+        return True
+    return False
+
+def write_to_csv(matches, doi):
+    fh = open('{}.csv'.format(doi),'w')
+    cols = ['intext','full','context']
+    writer = csv.DictWriter(fh, fieldnames=cols, delimiter=',')
+    writer.writeheader()
+    for citation in matches:
+        writer.writerow(citation)
+    fh.close()
 
 get_and_compare_citations(0)
