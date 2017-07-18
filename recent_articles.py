@@ -117,58 +117,28 @@ When running this the input should call min_jsonDict so it should look like this
 split_references(minJsonDict(path_to_jsonfile))
 """
 
-def split_references(list_of_dict):
+def split_references(list_of_dict, addInfo = False):
     articleList = []
+    count = 0 # this will help us see how successful this is. 
+    wrong = 0 # ""
     for x in range(len(list_of_dict)): # Iterates through each article's dictionary in the list.
         articleDict = list_of_dict[x]
+       
         content = articleDict['content']
-        article = content.split('References')
-        if len(article) == 2:
-            articleDict['references'] = article[1]
+       
+        ex = re.compile(r"""(( +[R|r][E|e][F|f][E|e][R|r][E|e][N|n][C|c][E|e][S|s])|( +[B|b][I|i][B|b][L|l][I|i][O|o][G|g][R|r][A|a][P|p][H|h][Y|y])|( +[W|w][O|o][R|r][K|k][S|s] ?[C|c][I|i][T|t][E|e][D|d])|( +[E|e][N|n][D|d] ?[N|n][O|o][T|t][E|e][S|s]))""")
+        article = re.split(ex,content)
+        
+        if len(article) == 7: # this is a check that the regex actually split successfully. 
+            articleDict['references'] = article[6]
             articleDict['content'] = article[0]
             articleList.append(articleDict)
+            count+= 1
         else:
-            article = content.split('REFERENCES')
-            if len(article) == 2:
-                articleDict['references'] = article[1]
-                articleDict['content'] = article[0]
-                articleList.append(articleDict)
-            else:
-                article = content.split('Bibliography')
-                if len(article) == 2:
-                    articleDict['references'] = article[1]
-                    articleDict['content'] = article[0]
-                    articleList.append(articleDict)
-                else:
-                    article = content.split('BIBLIOGRAPHY')
-                    if len(article) == 2:
-                        articleDict['references'] = article[1]
-                        articleDict['content'] = article[0]
-                        articleList.append(articleDict)
-                    else:
-                        article = content.split('BIBLIOGRAPHY')
-                        if len(article) == 2:
-                            articleDict['references'] = article[1]
-                            articleDict['content'] = article[0]
-                            articleList.append(articleDict)
-                        else:
-                            article = content.split('Endnotes')
-                            if len(article) == 2:
-                                articleDict['references'] = article[1]
-                                articleDict['content'] = article[0]
-                                articleList.append(articleDict)
-                            else:
-                                article = content.split('ENDNOTES')
-                                if len(article) == 2:
-                                    articleDict['references'] = article[1]
-                                    articleDict['content'] = article[0]
-                                    articleList.append(articleDict)
-                                else:
-                                    article = content.split('work cited')
-                                    if len(article) == 2:
-                                        articleDict['references'] = article[1]
-                                        articleDict['content'] = article[0]
-                                        articleList.append(articleDict)
+            wrong+=1
+    if addInfo == True: # this is just to show additional info if wanted. 
+        print(str(count)+' articles were split succesfully at the reference section')
+        print("And "+str(wrong)+' articles were not split sucessfully :(')
     return articleList
 
 """
