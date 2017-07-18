@@ -141,6 +141,60 @@ def split_references(list_of_dict, addInfo = False):
         print("And "+str(wrong)+' articles were not split sucessfully :(')
     return articleList
 
+def old_split_references(list_of_dict):
+    articleList = []
+    for x in range(len(list_of_dict)): # Iterates through each article's dictionary in the list.
+        articleDict = list_of_dict[x]
+        content = articleDict['content']
+        article = content.split('References')
+        if len(article) == 2:
+            articleDict['references'] = article[1]
+            articleDict['content'] = article[0]
+            articleList.append(articleDict)
+        else:
+            article = content.split('REFERENCES')
+            if len(article) == 2:
+                articleDict['references'] = article[1]
+                articleDict['content'] = article[0]
+                articleList.append(articleDict)
+            else:
+                article = content.split('Bibliography')
+                if len(article) == 2:
+                    articleDict['references'] = article[1]
+                    articleDict['content'] = article[0]
+                    articleList.append(articleDict)
+                else:
+                    article = content.split('BIBLIOGRAPHY')
+                    if len(article) == 2:
+                        articleDict['references'] = article[1]
+                        articleDict['content'] = article[0]
+                        articleList.append(articleDict)
+                    else:
+                        article = content.split('BIBLIOGRAPHY')
+                        if len(article) == 2:
+                            articleDict['references'] = article[1]
+                            articleDict['content'] = article[0]
+                            articleList.append(articleDict)
+                        else:
+                            article = content.split('Endnotes')
+                            if len(article) == 2:
+                                articleDict['references'] = article[1]
+                                articleDict['content'] = article[0]
+                                articleList.append(articleDict)
+                            else:
+                                article = content.split('ENDNOTES')
+                                if len(article) == 2:
+                                    articleDict['references'] = article[1]
+                                    articleDict['content'] = article[0]
+                                    articleList.append(articleDict)
+                                else:
+                                    article = content.split('work cited')
+                                    if len(article) == 2:
+                                        articleDict['references'] = article[1]
+                                        articleDict['content'] = article[0]
+                                        articleList.append(articleDict)
+    return articleList
+
 """
 def get_full_citations(articleStr, flag):
     matches=[]
@@ -184,22 +238,26 @@ def extract_text_from_pdf(doi):
     return text
 
 def get_and_compare_citations(articles):
-    articles = split_references(min_jsonDict(allDictionaries))
+    articles = old_split_references(min_jsonDict(allDictionaries))
     for article in articles:
         #print (article)
         doi = article['doi']
+        title = article['title']
         intexts = get_intexts(article['content'])
         fulls = get_full_citations_regex(article['references'])
-        matches = map_citations(intexts, fulls)
-        write_to_csv(matches, doi.replace("/",":"))
+        matches = map_citations(intexts, fulls, article['content'])
+        write_to_csv(matches, doi.replace("/",":"), title)
     return 0
 
-def map_citations(intexts, fulls):
+def map_citations(intexts, fulls, content):
     mapping=[]
     for intext in intexts:
         citation = {"intext" : intext}
-        # ALEX: GET CONTEXT HERE
-        citation['context'] = ''
+        pos = content.index(intext)
+        before = content[pos-150:pos]
+        after = content[pos:pos+150]
+        context = before+' '+after
+        citation['context'] = context
         split_cite=re.split(r'(\s+)',intext)#Split year from name/institution
         year = ''.join(filter(lambda x: x.isdigit(), split_cite[-1:][0]))
         other_stuff=''.join(split_cite[:-1])
@@ -237,12 +295,14 @@ def other_match(other_stuff, full):
         return True
     return False
 
-def write_to_csv(matches, doi):
+def write_to_csv(matches, doi, title):
     fh = open('{}.csv'.format(doi),'w')
-    cols = ['intext','full','context']
+    cols = ['intext','full','context', 'doi', 'title']
     writer = csv.DictWriter(fh, fieldnames=cols, delimiter=',')
     writer.writeheader()
     for citation in matches:
+        citation['doi'] = doi
+        citation['title'] = title
         writer.writerow(citation)
     fh.close()
 
