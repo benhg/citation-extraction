@@ -256,9 +256,8 @@ def get_intexts(articleStr):
 
 def get_full_citations_regex(articleStr):
     """Get all full citations given text of a references section of a paper"""
-    print(articleStr)
     ex = re.compile(
-        r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]))|[19|20]{2}\d{2};\d{2}:.*\.|(19|20)\d{2}[a-z]?\. """)
+        r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]))|[19|20]{2}\d{2};\d{2}:.*\.|(?<year3>(19|20)\d{2}[a-z]?\.) """)
     matches = re.split(ex, articleStr)
     tempMatches = []
     for i in range(0, len(matches) - 1, 2):
