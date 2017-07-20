@@ -133,7 +133,7 @@ def min_jsonDict(list_of_dict, number_of_articles=0):
         totalDict['doi'] = doi
 
         articleList.append(totalDict)
-    # print(len(articleList))
+# print(len(articleList))
     # It's a list of dictionaries that correlate to individual articles.
     return articleList
 
@@ -257,8 +257,8 @@ def get_intexts(articleStr):
 def get_full_citations_regex(articleStr):
     """Get all full citations given text of a references section of a paper"""
     ex = re.compile(
-        r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]))|[19|20]{2}\d{2};\d{2}:.*\.|(?<year3>(19|20)\d{2}[a-z]?\.) """)
-    matches = re.split(ex, articleStr)
+        r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]))|[19|20]{2}\d{2};\d{2}:.*\.|((———\. )?((19|20)\d{2}[a-z]? ?\.? ))""")
+    matches = list(filter(lambda x:x!=None, re.split(ex,articleStr)))
     tempMatches = []
     for i in range(0, len(matches) - 1, 2):
         match = xstr(matches[i]) + " " + xstr(matches[(i + 1)])
