@@ -256,14 +256,22 @@ def get_intexts(articleStr):
 
 def get_full_citations_regex(articleStr):
     """Get all full citations given text of a references section of a paper"""
+    print(articleStr)
     ex = re.compile(
-        r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]))|[19|20]{2}\d{2};\d{2}:.*\.""")
+        r"""(?<year>([(][^)]*(19|20) ?[0-9]{2}[^)]*[)]))|[19|20]{2}\d{2};\d{2}:.*\.|(19|20)\d{2}[a-z]?\. """)
     matches = re.split(ex, articleStr)
     tempMatches = []
     for i in range(0, len(matches) - 1, 2):
-        match = matches[i] + " " + matches[(i + 1)]
+        match = xstr(matches[i]) + " " + xstr(matches[(i + 1)])
         tempMatches.append(match)
     return tempMatches
+
+
+def xstr(s):
+    """convert NoneType to empty string"""
+    if s is None:
+        return ''
+    return str(s)
 
 
 def extract_text_from_pdf(doi):
@@ -284,7 +292,7 @@ def get_and_compare_citations(articles):
     output will be written to file with filename the same as the doi
     of the articles inputted"""
     for article in articles:
-        #print (article)
+        #  (article)
         doi = article['doi']
         title = article['title']
         intexts = get_intexts(article['content'])
@@ -340,8 +348,7 @@ def other_match(other_stuff, full):
                 return True
         return False
     elif "As" in other_stuff or "as" in other_stuff:
-        if other_stuff.split('and')[
-                1].strip() in full:
+        if other_stuff.lower().split('as')[1].strip() in full:
             return True
         return False
     elif 'and' in other_stuff:
