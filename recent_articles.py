@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+#usage python3 recent_articles.py
+
 import json
 import regex as re
 import csv
@@ -321,7 +324,13 @@ def other_match(other_stuff, full):
     """Checks for matches between in text citation
     and full citation, ignoring year. Most of the time this
     will be an author, but sometimes it's a conference or 
-    an institution or something"""
+    an institution or something
+
+    I know this is an ugly ass pile of logic but that's citation 
+    extraction in a nutshell for you
+    
+    i'm sorry to anyone who has to read this in future -BG
+    """
     if ',' in other_stuff:
         if other_stuff.split(',')[0].strip() in full:
             return True
@@ -329,6 +338,11 @@ def other_match(other_stuff, full):
             if other_stuff.split('and')[0].strip() in full or other_stuff.split('and')[
                     1].strip() in full:
                 return True
+        return False
+    elif "As" in other_stuff or "as" in other_stuff:
+        if other_stuff.split('and')[
+                1].strip() in full:
+            return True
         return False
     elif 'and' in other_stuff:
         if other_stuff.split('and')[0].strip() in full or other_stuff.split('and')[
