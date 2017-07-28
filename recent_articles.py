@@ -1,13 +1,9 @@
-#!/usr/bin/env python3
-#usage python3 recent_articles.py
-
 import json
 import regex as re
 import csv
-
-path = '/home/benglick/data-00020.json'
-
-
+import nltk
+from fractions import Fraction
+path = 'data-00020.json'
 def get_recent_articles(path, printInfo=False):
     """
     This function will read the json file which is the formatted as a dictionary of dictionaries.
@@ -26,10 +22,8 @@ def get_recent_articles(path, printInfo=False):
         incomplete = 0
         c = 0
         for line in f:  # Iterates through each row of the json file.
-
             tcount += 1  # Tracks how many articles there are total.
             data = json.loads(line)
-
             """
             This where I check that the publication date exists in the json and then that
             the publication data is in the 21st Century. Then I call 'data' which references
@@ -44,7 +38,6 @@ def get_recent_articles(path, printInfo=False):
                     count += 1
             else:
                 incomplete += 1
-
         # This allows user to show info about json file if they want.
         if printInfo:
             research = recent[3]
@@ -70,8 +63,6 @@ def get_recent_articles(path, printInfo=False):
             "There are " +
             str(rcount) +
             " articles from 2010-present but the list that stores these possible articles has a length different that the counter...")
-
-
 def parse_research_articles(list_of_dict, addInfo=False):
     """
     This function will take get_articles as a parameter and then return a list of dictionaries
@@ -85,7 +76,6 @@ def parse_research_articles(list_of_dict, addInfo=False):
             if 'type' in articleDict.keys():
                 if 'research-article' in articleDict['type']:
                     research_articles += [articleDict]
-
     # This is just a conditional to give the user an option to display more
     # info if needed.
     if addInfo:
@@ -94,16 +84,12 @@ def parse_research_articles(list_of_dict, addInfo=False):
         t = research_articles[0]
         print(['title'])
     return research_articles
-
-
 def get_dictionaries(path):
     """
     This just combines the two functions above.
     """
     articles = parse_research_articles(get_recent_articles(path))
     return articles
-
-
 def min_jsonDict(list_of_dict, number_of_articles=0):
     """
     This function will create a list of dictionaries where each entry has the articles
@@ -131,13 +117,9 @@ def min_jsonDict(list_of_dict, number_of_articles=0):
         totalDict['content'] = totalArticle
         totalDict['title'] = title
         totalDict['doi'] = doi
-
         articleList.append(totalDict)
-# print(len(articleList))
     # It's a list of dictionaries that correlate to individual articles.
     return articleList
-
-
 def split_references(list_of_dict, addInfo=False):
     """
     This function splits the article into a content section and a references section.
@@ -150,16 +132,14 @@ def split_references(list_of_dict, addInfo=False):
     # Iterates through each article's dictionary in the list.
     for x in range(len(list_of_dict)):
         articleDict = list_of_dict[x]
-
         content = articleDict['content']
-
         ex = re.compile(r"""(( +[R|r][E|e][F|f][E|e][R|r][E|e][N|n][C|c][E|e][S|s])|( +[B|b][I|i][B|b][L|l][I|i][O|o][G|g][R|r][A|a][P|p][H|h][Y|y])|( +[W|w][O|o][R|r][K|k][S|s] ?[C|c][I|i][T|t][E|e][D|d])|( +[E|e][N|n][D|d] ?[N|n][O|o][T|t][E|e][S|s]))""")
         article = re.split(ex, content)
-
         # this is a check that the regex actually split successfully.
         if len(article) == 7:
             articleDict['references'] = article[6]
             articleDict['content'] = article[0]
+            # articleDict['sentence_list'] = nltk.sent_tokenize(article[0])
             articleList.append(articleDict)
             count += 1
         else:
@@ -170,8 +150,6 @@ def split_references(list_of_dict, addInfo=False):
             ' articles were split succesfully at the reference section')
         print("And " + str(wrong) + ' articles were not split sucessfully :(')
     return articleList
-
-
 def old_split_references(list_of_dict):
     """Same as above but without a regex"""
     articleList = []
@@ -227,18 +205,6 @@ def old_split_references(list_of_dict):
                                         articleDict['content'] = article[0]
                                         articleList.append(articleDict)
     return articleList
-
-
-"""
-def get_full_citations(articleStr, flag):
-    matches=[]
-    refs = refextract.extract_references_from_string(articleStr, is_only_references=flag)
-    for ref in refs:
-        matches.append(ref["raw_ref"][0])
-    return matches
-"""
-
-
 def get_intexts(articleStr):
     """Get all in text citations given a string representation of 
     text of an article"""
@@ -252,8 +218,6 @@ def get_intexts(articleStr):
     regex = "(" + author + additional + "*" + year + ")"
     matches = re.findall(regex, articleStr)
     return matches
-
-
 def get_full_citations_regex(articleStr):
     """Get all full citations given text of a references section of a paper"""
     ex = re.compile(
@@ -264,15 +228,11 @@ def get_full_citations_regex(articleStr):
         match = xstr(matches[i]) + " " + xstr(matches[(i + 1)])
         tempMatches.append(match)
     return tempMatches
-
-
 def xstr(s):
     """convert NoneType to empty string"""
     if s is None:
         return ''
     return str(s)
-
-
 def extract_text_from_pdf(doi):
     """Extract all text from an article pdf given a doi"""
     text = ""
@@ -284,23 +244,22 @@ def extract_text_from_pdf(doi):
         page_content = page.extractText()
         text += " " + page_content
     return text
-
-
-def get_and_compare_citations(articles):
+def get_and_compare_citations(articles, writeToCSV = False):
     """pull all citations out of all articles in @param articles
     output will be written to file with filename the same as the doi
     of the articles inputted"""
+    dictList = []
+    uniqDict = {}
     for article in articles:
-        #  (article)
         doi = article['doi']
         title = article['title']
-        intexts = get_intexts(article['content'])
-        fulls = get_full_citations_regex(article['references'])
-        matches = map_citations(intexts, fulls, article['content'])
-        write_to_csv(matches, doi.replace("/", ":"), title)
-    return 0
-
-
+        intexts = get_intexts(article['content']) # returns a list of citations
+        fulls = get_full_citations_regex(article['references']) # returns a list of full citations
+        matches = map_citations(intexts, fulls, article['content']) # returns a list of dictionaires
+        dictList.append(matches)
+        if writeToCSV == True:
+            write_to_csv(matches, doi.replace("/", ":"), title)
+    return 0 
 def map_citations(intexts, fulls, content):
     """Given a list of in text citations, a
     list of full citations, and a string representation
@@ -308,12 +267,17 @@ def map_citations(intexts, fulls, content):
     each citation is a dictionary with items intext, full, and context"""
     mapping = []
     for intext in intexts:
+    
+    # for x in range(len(intexts)):
+        
         citation = {"intext": intext}
         pos = content.index(intext)
-        before = content[pos - 150:pos]
-        after = content[pos:pos + 150]
+        before = content[pos - 500:pos]
+        after = content[pos:pos + 500]
+        citLoc = pos / (len(content))
         context = before + ' ' + after
-        citation['context'] = context
+        citation['context'] = clean_context(context)
+        citation['location'] = clean_location(citLoc)
         # Split year from name/institution
         split_cite = re.split(r'(\s+)', intext)
         year = ''.join(filter(lambda x: x.isdigit(), split_cite[-1:][0]))
@@ -325,14 +289,41 @@ def map_citations(intexts, fulls, content):
                 break
         mapping.append(citation)
     return mapping
-
-
+def clean_context(context):
+    """
+    This will take in intext citations along with it's respective context. 
+    Then the context will be split into a list of sentences. Then the list
+    take off the first and last indices so that we are left with only full
+    sentences 
+    """
+    sentenceList = nltk.sent_tokenize(context)
+    cleanContext = sentenceList[1:(len(sentenceList)-2)]
+    return cleanContext 
+def clean_location(citLoc):
+    cleanLoc = 0
+    if citLoc < float(1/8) and citLoc > 0:
+        cleanLoc = str(1.0)+'/'+str(8.0)
+    elif citLoc < float(2/8) and citLoc > float(1/8):
+        cleanLoc = str(2.0)+'/'+str(8.0)
+    elif citLoc < float(3/8) and citLoc > float(2/8):
+        cleanLoc = str(3.0)+'/'+str(8.0)
+    elif citLoc < float(4/8) and citLoc > float(3/8):
+        cleanLoc = str(4.0)+'/'+str(8.0)
+    elif citLoc < float(5/8) and citLoc > float(4/8):
+        cleanLoc = str(5.0)+'/'+str(8.0)
+    elif citLoc < float(6/8) and citLoc > float(5/8):
+        cleanLoc = str(6.0)+'/'+str(8.0)
+    elif citLoc < float(7/8) and citLoc > float(6/8):
+        cleanLoc = str(7.0)+'/'+str(8.0)
+    elif citLoc < float(8/8) and citLoc > float(7/8):
+        cleanLoc = str(8.0)+'/'+str(8.0)
+    
+    return cleanLoc
 def other_match(other_stuff, full):
     """Checks for matches between in text citation
     and full citation, ignoring year. Most of the time this
     will be an author, but sometimes it's a conference or 
     an institution or something
-
     I know this is an ugly ass pile of logic but that's citation 
     extraction in a nutshell for you
     
@@ -369,14 +360,12 @@ def other_match(other_stuff, full):
     elif other_stuff in full:
         return True
     return False
-
-
 def write_to_csv(matches, doi, title):
     """Writes all citations to csv with their 
     respective in-text citation, full citation,
     context, doi, and title"""
     fh = open('{}.csv'.format(doi), 'w')
-    cols = ['intext', 'full', 'context', 'doi', 'title']
+    cols = ['intext', 'full', 'context', 'doi', 'title','location']
     writer = csv.DictWriter(fh, fieldnames=cols, delimiter=',')
     writer.writeheader()
     for citation in matches:
@@ -384,7 +373,12 @@ def write_to_csv(matches, doi, title):
         citation['title'] = title
         writer.writerow(citation)
     fh.close()
-
-allDictionaries = get_dictionaries(path)
-articles = old_split_references(min_jsonDict(allDictionaries))
-get_and_compare_citations(articles)
+# allDictionaries = get_dictionaries(path)
+# articles = split_references(min_jsonDict(allDictionaries))
+# dict1 = articles[0]
+# string = dict1['content']
+if __name__ == '__main__':
+    
+    allDictionaries = get_dictionaries(path)
+    articles = old_split_references(min_jsonDict(allDictionaries))
+    get_and_compare_citations(articles,True)
