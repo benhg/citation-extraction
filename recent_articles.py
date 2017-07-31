@@ -2,8 +2,8 @@ import json
 import regex as re
 import csv
 import nltk
-from fractions import Fraction
-path = 'data-00020.json'
+import os, sys
+# path = 'data-00020.json'
 def get_recent_articles(path, printInfo=False):
     """
     This function will read the json file which is the formatted as a dictionary of dictionaries.
@@ -217,6 +217,7 @@ def get_intexts(articleStr):
         "| *\(" + year_num + page_num + "\))"
     regex = "(" + author + additional + "*" + year + ")"
     matches = re.findall(regex, articleStr)
+    
     return matches
 def get_full_citations_regex(articleStr):
     """Get all full citations given text of a references section of a paper"""
@@ -244,7 +245,7 @@ def extract_text_from_pdf(doi):
         page_content = page.extractText()
         text += " " + page_content
     return text
-def get_and_compare_citations(articles, writeToCSV = False):
+def get_and_compare_citations(articles, writeToCSV=False):
     """pull all citations out of all articles in @param articles
     output will be written to file with filename the same as the doi
     of the articles inputted"""
@@ -364,7 +365,7 @@ def write_to_csv(matches, doi, title):
     """Writes all citations to csv with their 
     respective in-text citation, full citation,
     context, doi, and title"""
-    fh = open('{}.csv'.format(doi), 'w')
+    fh = open('/home/afoster/github/citations/{}.csv'.format(doi), 'w')
     cols = ['intext', 'full', 'context', 'doi', 'title','location']
     writer = csv.DictWriter(fh, fieldnames=cols, delimiter=',')
     writer.writeheader()
@@ -373,12 +374,20 @@ def write_to_csv(matches, doi, title):
         citation['title'] = title
         writer.writerow(citation)
     fh.close()
-# allDictionaries = get_dictionaries(path)
-# articles = split_references(min_jsonDict(allDictionaries))
-# dict1 = articles[0]
-# string = dict1['content']
 if __name__ == '__main__':
+    dir_path = '/home/afoster/github/jsondata/'
+    json_list = os.listdir(dir_path) 
+    print((json_list))
+    data = []
+    # for x in range(len(json_list)):
+    #     json = json_list[x]
+    #     if 'data-' in json[0:5]:
+    #         data.append(json)
+    directory = os.makedirs('/home/afoster/github/citations') # so this makes a directory named whatever the json file is called. 
+    for x in json_list:
+        file = '/home/afoster/github/jsondata/{}'.format(x)
     
-    allDictionaries = get_dictionaries(path)
-    articles = old_split_references(min_jsonDict(allDictionaries))
-    get_and_compare_citations(articles,True)
+        allDictionaries = get_dictionaries(file) 
+        articles = old_split_references(min_jsonDict(allDictionaries))
+        get_and_compare_citations(articles,True)
+
